@@ -1,0 +1,40 @@
+name: Build and Export OpenColorIO
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-export:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Clone vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg && git checkout 74d4bc75ec && .\bootstrap-vcpkg.bat
+
+    - name: Install OpenColorIO
+      run: |
+        .\vcpkg\vcpkg.exe install opencolorio[tools]:x64-windows
+
+    - name: Export OpenColorIO as Zip
+      run: |
+        .\vcpkg\vcpkg.exe export opencolorio:x64-windows --zip --output-dir artifacts
+      env:
+        VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: opencolorio-package
+        path: artifacts/*.zip
